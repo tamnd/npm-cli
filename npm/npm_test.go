@@ -114,10 +114,10 @@ func TestVersion(t *testing.T) {
 	mux.HandleFunc("/react/18.2.0", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{
-			"name":    "react",
-			"version": "18.2.0",
+			"name":        "react",
+			"version":     "18.2.0",
 			"description": "React is a JavaScript library for building user interfaces.",
-			"license": "MIT",
+			"license":     "MIT",
 			"dependencies": map[string]any{
 				"loose-envify": "^1.1.0",
 			},
