@@ -1,14 +1,14 @@
-# npm
+# npm-cli
 
-A command line for npm.
+`npmcli` — a command line for the npm package registry.
 
-`npm` is a single pure-Go binary. It reads public npm data
-over plain HTTPS, shapes it into clean records, and prints output that pipes
-into the rest of your tools. No API key, nothing to run alongside it.
+A single pure-Go binary that reads public npm data over plain HTTPS, shapes it
+into clean records, and prints output that pipes into the rest of your tools.
+No API key, nothing to run alongside it.
 
 The same package is also a [resource-URI driver](#use-it-as-a-resource-uri-driver),
 so a host program like [ant](https://github.com/tamnd/ant) can address
-npm as `npm://` URIs.
+npm packages as `npm://` URIs.
 
 ## Install
 
@@ -20,17 +20,19 @@ Or grab a prebuilt binary from the [releases](https://github.com/tamnd/npm-cli/r
 the container image:
 
 ```bash
-docker run --rm ghcr.io/tamnd/npm:latest --help
+docker run --rm ghcr.io/tamnd/npmcli:latest --help
 ```
 
 ## Usage
 
 ```bash
-npm page <path>                      # fetch one page as a record
-npm page <path> -o json              # as JSON, ready for jq
-npm page <path> --template '{{.Body}}'  # just the readable body text
-npm links <path>                     # the pages it links to, one per line
-npm --help                           # the whole command tree
+npmcli info express                     # latest version, author, keywords, repo
+npmcli info express -o json             # as JSON, ready for jq
+npmcli version react 18.2.0             # metadata for a specific version
+npmcli search "react hooks" --limit 10  # search packages
+npmcli downloads react --period last-month  # download counts
+npmcli deps express                     # list dependencies
+npmcli --help                           # the whole command tree
 ```
 
 Every command shares one output contract: `-o table|json|jsonl|csv|tsv|url|raw`,
@@ -38,25 +40,19 @@ Every command shares one output contract: `-o table|json|jsonl|csv|tsv|url|raw`,
 The default adapts to where output goes (a table on a terminal, JSONL in a
 pipe), so the same command reads well by hand and parses cleanly downstream.
 
-This is a fresh scaffold. It ships one example resource type, `page`, wired end
-to end. Model the real npm records in `npm/` and declare their
-operations in `npm/domain.go`; each one becomes a command, an HTTP
-route, and an MCP tool at once.
-
 ## Serve it
 
-The same operations are available over HTTP and as an MCP tool set for agents,
-with no extra code:
+The same operations are available over HTTP and as an MCP tool set for agents:
 
 ```bash
-npm serve --addr :7777    # GET /v1/page/<path>  returns NDJSON
-npm mcp                   # speak MCP over stdio
+npmcli serve --addr :7777    # GET /v1/info/<name>  returns NDJSON
+npmcli mcp                   # speak MCP over stdio
 ```
 
 ## Use it as a resource-URI driver
 
-`npm` registers a `npm` domain the way a program registers a
-database driver with `database/sql`. A host enables it with one blank import:
+`npmcli` registers a `npm` domain the way a program registers a database driver
+with `database/sql`. A host enables it with one blank import:
 
 ```go
 import _ "github.com/tamnd/npm-cli/npm"
@@ -66,10 +62,8 @@ Then [ant](https://github.com/tamnd/ant) (or any program that links the package)
 dereferences `npm://` URIs without knowing anything about npm:
 
 ```bash
-ant get npm://page/<path>   # fetch the record
-ant cat npm://page/<path>   # just the body text
-ant ls  npm://page/<path>   # the pages it links to, each addressable
-ant url npm://page/<path>   # the live https URL
+ant get npm://package/express           # fetch the record
+ant url npm://package/react             # the live https URL
 ```
 
 ## Development
@@ -82,24 +76,19 @@ docs/                tago documentation site
 ```
 
 ```bash
-make build      # ./bin/npm
+make build      # ./bin/npmcli
 make test       # go test ./...
 make vet        # go vet ./...
 ```
 
 ## Releasing
 
-Push a version tag and GitHub Actions runs GoReleaser, which builds the
-archives, Linux packages, the multi-arch GHCR image, checksums, SBOMs, and a
-cosign signature:
+Push a version tag and GitHub Actions runs GoReleaser:
 
 ```bash
 git tag v0.1.0
 git push --tags
 ```
-
-The Homebrew and Scoop steps self-disable until their tokens exist, so the first
-release works with no extra secrets.
 
 ## License
 

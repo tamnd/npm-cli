@@ -1,6 +1,6 @@
 # Build into bin/ (gitignored) so the binary never collides with the npm/
 # source package at the repo root.
-BINARY  := bin/npm
+BINARY  := bin/npmcli
 PKG     := ./cmd/npm
 VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 COMMIT  := $(shell git rev-parse --short HEAD 2>/dev/null || echo none)

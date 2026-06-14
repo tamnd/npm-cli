@@ -7,8 +7,7 @@ import (
 )
 
 // These tests are offline: they exercise the URI driver's pure string functions
-// and the host wiring (mint, body, resolve), which need no network. The client's
-// HTTP behaviour is covered in npm_test.go.
+// and the host wiring, which need no network.
 
 func TestDomainInfo(t *testing.T) {
 	info := Domain{}.Info()
@@ -16,18 +15,19 @@ func TestDomainInfo(t *testing.T) {
 		t.Errorf("Scheme = %q, want npm", info.Scheme)
 	}
 	if len(info.Hosts) == 0 || info.Hosts[0] != Host {
-		t.Errorf("Hosts = %v, want [%s]", info.Hosts, Host)
+		t.Errorf("Hosts = %v, want first=%s", info.Hosts, Host)
 	}
-	if info.Identity.Binary != "npm" {
-		t.Errorf("Identity.Binary = %q, want npm", info.Identity.Binary)
+	if info.Identity.Binary != "npmcli" {
+		t.Errorf("Identity.Binary = %q, want npmcli", info.Identity.Binary)
 	}
 }
 
 func TestClassify(t *testing.T) {
 	cases := []struct{ in, typ, id string }{
-		{"wiki/Go", "page", "wiki/Go"},
-		{"/about/", "page", "about"},
-		{"https://" + Host + "/team/contact", "page", "team/contact"},
+		{"express", "package", "express"},
+		{"@scope/pkg", "package", "@scope/pkg"},
+		{"https://www.npmjs.com/package/react", "package", "react"},
+		{"https://npmjs.com/package/@babel/core", "package", "@babel/core"},
 	}
 	for _, tc := range cases {
 		typ, id, err := Domain{}.Classify(tc.in)
@@ -39,38 +39,52 @@ func TestClassify(t *testing.T) {
 }
 
 func TestLocate(t *testing.T) {
-	got, err := Domain{}.Locate("page", "wiki/Go")
-	want := "https://" + Host + "/wiki/Go"
+	got, err := Domain{}.Locate("package", "react")
+	want := "https://www.npmjs.com/package/react"
 	if err != nil || got != want {
 		t.Errorf("Locate = (%q, %v), want (%q, nil)", got, err, want)
 	}
 }
 
-// TestHostWiring mounts the driver in a kit Host (the runtime ant drives) and
-// checks the round trip: a record mints to its URI, its body is readable, and a
-// bare id resolves back to the same URI. The init in domain.go registers the
-// domain, so kit.Open finds it.
+func TestLocateScoped(t *testing.T) {
+	got, err := Domain{}.Locate("package", "@babel/core")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got == "" {
+		t.Error("Locate returned empty URL for scoped package")
+	}
+}
+
+func TestLocateUnknownType(t *testing.T) {
+	_, err := Domain{}.Locate("unknown", "react")
+	if err == nil {
+		t.Error("expected error for unknown URI type, got nil")
+	}
+}
+
+// TestHostWiring mounts the driver in a kit Host and checks the round trip.
 func TestHostWiring(t *testing.T) {
 	h, err := kit.Open()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	p := &Page{ID: "wiki/Go", URL: "https://" + Host + "/wiki/Go", Title: "Go", Body: "Go is a language."}
+	p := &Package{
+		Name:    "express",
+		Version: "4.18.2",
+		URL:     "https://www.npmjs.com/package/express",
+	}
 	u, err := h.Mint(p)
 	if err != nil {
 		t.Fatalf("Mint: %v", err)
 	}
-	if want := "npm://page/wiki/Go"; u.String() != want {
+	if want := "npm://package/express"; u.String() != want {
 		t.Errorf("Mint = %q, want %q", u.String(), want)
 	}
 
-	if body, ok := h.Body(p); !ok || body == "" {
-		t.Errorf("Body = (%q, %v), want non-empty", body, ok)
-	}
-
-	got, err := h.ResolveOn("npm", "about")
-	if err != nil || got.String() != "npm://page/about" {
-		t.Errorf("ResolveOn = (%q, %v), want npm://page/about", got.String(), err)
+	got, err := h.ResolveOn("npm", "react")
+	if err != nil || got.String() != "npm://package/react" {
+		t.Errorf("ResolveOn = (%q, %v), want npm://package/react", got.String(), err)
 	}
 }

@@ -9,15 +9,15 @@
 # image; each manager lights up the moment its repository and token exist.
 version: 2
 
-project_name: npm
+project_name: npmcli
 
 before:
   hooks:
     - go mod download
 
 builds:
-  - id: npm
-    binary: npm
+  - id: npmcli
+    binary: npmcli
     main: ./cmd/npm
     env:
       - CGO_ENABLED=0
@@ -43,7 +43,7 @@ builds:
 
 archives:
   - id: default
-    name_template: "npm_{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ with .Arm }}v{{ . }}{{ end }}"
+    name_template: "npmcli_{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ with .Arm }}v{{ . }}{{ end }}"
     format_overrides:
       - goos: windows
         formats: [zip]
@@ -53,7 +53,7 @@ archives:
 
 nfpms:
   - id: linux-packages
-    package_name: npm
+    package_name: npmcli
     file_name_template: "{{ .ConventionalFileName }}"
     vendor: tamnd
     homepage: https://github.com/tamnd/npm-cli
@@ -72,7 +72,7 @@ nfpms:
 
 dockers_v2:
   - images:
-      - ghcr.io/tamnd/npm
+      - ghcr.io/tamnd/npmcli
     tags:
       - "{{ .Version }}"
       - latest
@@ -90,7 +90,7 @@ dockers_v2:
       org.opencontainers.image.licenses: "Apache-2.0"
 
 homebrew_casks:
-  - name: npm
+  - name: npmcli
     repository:
       owner: tamnd
       name: homebrew-tap
