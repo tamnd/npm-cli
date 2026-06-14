@@ -12,10 +12,10 @@ ARG TARGETPLATFORM
 
 # ca-certificates for HTTPS; tzdata for sane timestamps.
 RUN apk add --no-cache ca-certificates tzdata \
- && adduser -D -H -u 10001 npm
+ && adduser -D -H -u 10001 npmuser
 
-COPY $TARGETPLATFORM/npm /usr/bin/npm
+COPY $TARGETPLATFORM/npmcli /usr/bin/npmcli
 
-USER npm
+USER npmuser
 
-ENTRYPOINT ["/usr/bin/npm"]
+ENTRYPOINT ["/usr/bin/npmcli"]
